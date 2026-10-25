@@ -1,0 +1,10 @@
+{
+  "description": "A responsive journaling tool that helps users transform overthinking into clarity through AI-driven cognitive reframing and insightful analytics.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

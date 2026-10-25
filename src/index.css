@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f7f5ee;
+  --color-panel: #eae7f2;
+  --color-lavender-border: #c0b9dd;
+  --color-primary: #5975bd;
+  --color-teal: #75c9cb;
+  --color-ink: #2c343e;
+  --color-muted: #6f7782;
+  --color-resolved: #80a1d4;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #f7f5ee;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7f5ee;
+  color: #2c343e;
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #5975bd;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #c9d3ed;
+  color: #2c343e;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #b9b3c2;
+  background-clip: padding-box;
+}

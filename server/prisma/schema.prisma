@@ -1,0 +1,47 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String         @id @default(uuid())
+  email     String         @unique
+  password  String
+  name      String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  entries   JournalEntry[]
+}
+
+model JournalEntry {
+  id           String               @id @default(uuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawText      String               @db.Text
+  clarityScore Int                  @default(50)
+  distortions  CognitiveDistortion[]
+  reflections  SocraticReflection[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model CognitiveDistortion {
+  id             String       @id @default(uuid())
+  entryId        String
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  distortionType String       // e.g., "Catastrophizing", "Mind Reading"
+  confidence     Float        @default(1.0)
+}
+
+model SocraticReflection {
+  id             String       @id @default(uuid())
+  entryId        String
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  socraticPrompt String       @db.Text
+  userResponse   String?      @db.Text
+  createdAt      DateTime     @default(now())
+}
