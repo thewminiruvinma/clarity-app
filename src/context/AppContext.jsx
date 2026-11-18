@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { fetchJournalEntries, createJournalEntry, submitReflectionResponse } from "../services/api"
 
 const AppContext = createContext(null)
-const validViews = ["journal", "history", "growth"]
+const validViews = ["journal", "history", "growth", "profile"]
 
 function viewFromPath() {
   const path = window.location.pathname.replace("/", "")
@@ -12,11 +12,9 @@ function viewFromPath() {
 export function AppProvider({ children }) {
   const [currentView, setCurrentView] = useState(viewFromPath)
   
-  // Check if token exists in localStorage to determine real authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem("token"))
   const [authMode, setAuthMode] = useState("login")
   
-  // Database states
   const [entries, setEntries] = useState([])
   const [selectedEntryId, setSelectedEntryId] = useState(null)
   const [isLoadingEntries, setIsLoadingEntries] = useState(false)
@@ -27,10 +25,26 @@ export function AppProvider({ children }) {
   // Real user state initialized safely
   const [user, setUser] = useState({ id: null, name: "", email: "" })
 
-  // Always read the live token directly from localStorage inside effects/functions
+  // Crisis text number state persisted in localStorage (default: 741741)
+  const [crisisTextNumber, setCrisisTextNumber] = useState(() => {
+    return localStorage.getItem("crisisTextNumber") || "741741"
+  })
+
+  const updateCrisisNumber = (newNumber) => {
+    setCrisisTextNumber(newNumber)
+    localStorage.setItem("crisisTextNumber", newNumber)
+  }
+
+  const updateProfile = (updatedData) => {
+    setUser((prev) => {
+      const nextUser = { ...prev, ...updatedData }
+      if (nextUser.name) localStorage.setItem("userName", nextUser.name)
+      return nextUser
+    })
+  }
+
   const token = localStorage.getItem("token")
 
-  // Load entries from Express / MySQL backend on mount or authentication change
   useEffect(() => {
     const loadBackendEntries = async () => {
       const activeToken = localStorage.getItem("token");
@@ -83,7 +97,7 @@ export function AppProvider({ children }) {
 
     setUser((current) => ({ ...current, ...profile }));
     setIsAuthenticated(true);
-    setEntries([]); // Clear previous user state immediately
+    setEntries([]);
     setSelectedEntryId(null);
     navigate("journal");
   }
@@ -100,7 +114,6 @@ export function AppProvider({ children }) {
     window.history.pushState({}, "", "/");
   }
 
-  // Create new journal entry via API
   const addEntry = async (rawText) => {
     const activeToken = localStorage.getItem("token");
     try {
@@ -114,7 +127,6 @@ export function AppProvider({ children }) {
     }
   }
 
-  // Submit follow-up dialogue / reflection response via API
   const addFollowUp = async (entryId, message) => {
     const activeToken = localStorage.getItem("token");
     const targetEntry = entries.find((e) => e.id === entryId)
@@ -171,6 +183,9 @@ export function AppProvider({ children }) {
       setEmergencyOpen,
       isSidebarOpen,
       setSidebarOpen,
+      crisisTextNumber,
+      updateCrisisNumber,
+      updateProfile,
     }),
     [
       currentView,
@@ -182,6 +197,7 @@ export function AppProvider({ children }) {
       isLoadingEntries,
       isEmergencyOpen,
       isSidebarOpen,
+      crisisTextNumber,
       token,
     ],
   )

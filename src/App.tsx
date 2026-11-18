@@ -1,17 +1,19 @@
 import React from "react"
-import Sidebar from "./components/layout/Sidebar"
-import Header from "./components/layout/Header"
-import EmergencySupportModal from "./components/modals/EmergencySupportModal"
-import { AppProvider, useApp } from "./context/AppContext"
-import AuthView from "./views/AuthView"
-import GrowthAnalyticsView from "./views/GrowthAnalyticsView"
-import HistoryMasterDetailView from "./views/HistoryMasterDetailView"
-import JournalWorkspaceView from "./views/JournalWorkspaceView"
+import Sidebar from "./components/layout/Sidebar.jsx"
+import Header from "./components/layout/Header.jsx"
+import EmergencySupportModal from "./components/modals/EmergencySupportModal.jsx"
+import Profile from "./components/profile/Profile.jsx"
+import { AppProvider, useApp } from "./context/AppContext.jsx"
+import AuthView from "./views/AuthView.jsx"
+import GrowthAnalyticsView from "./views/GrowthAnalyticsView.jsx"
+import HistoryMasterDetailView from "./views/HistoryMasterDetailView.jsx"
+import JournalWorkspaceView from "./views/JournalWorkspaceView.jsx"
 
 const views: Record<string, React.ComponentType> = {
   journal: JournalWorkspaceView,
   history: HistoryMasterDetailView,
   growth: GrowthAnalyticsView,
+  profile: Profile,
 }
 
 function ClarityApp() {
@@ -26,7 +28,7 @@ function ClarityApp() {
       <Sidebar />
       <div className="min-h-screen lg:pl-64">
         <Header>{null}</Header>
-        <main>
+        <main className="p-6 lg:p-8">
           <CurrentView />
         </main>
       </div>

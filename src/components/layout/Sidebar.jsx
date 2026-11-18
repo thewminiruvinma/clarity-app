@@ -7,14 +7,16 @@ import {
   MessageCircle,
   PenTool,
   Sparkles,
+  User,
   X,
 } from "lucide-react"
-import { useApp } from "../../context/AppContext"
+import { useApp } from "../../context/AppContext.jsx"
 
 const navItems = [
   { id: "journal", label: "Journal Workspace", icon: PenTool },
   { id: "history", label: "History & Reflections", icon: MessageCircle },
   { id: "growth", label: "Growth Analytics", icon: BarChart3 },
+  { id: "profile", label: "Profile & Settings", icon: User },
 ]
 
 export default function Sidebar() {
@@ -117,11 +119,11 @@ export default function Sidebar() {
 
           <div className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/55 p-2.5">
             <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-teal font-bold text-ink">
-              {user.name.charAt(0)}
+              {user.name ? user.name.charAt(0) : "U"}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold text-ink">
-                {user.name} Chen
+                {user.name || "User"}
               </span>
               <span className="block truncate text-[11px] text-muted">
                 Mindful member

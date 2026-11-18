@@ -5,11 +5,12 @@ const viewMeta = {
   journal: { eyebrow: "Daily practice", title: "Journal workspace" },
   history: { eyebrow: "Your reflections", title: "History & reflections" },
   growth: { eyebrow: "Mindful progress", title: "Cognitive growth & insights" },
+  profile: { eyebrow: "Account settings", title: "Profile & preferences" },
 }
 
 export default function Header({ children }) {
   const { currentView } = useApp()
-  const meta = viewMeta[currentView]
+  const meta = viewMeta[currentView] || { eyebrow: "Settings", title: "Profile & preferences" }
 
   return (
     <header className="flex min-h-24 items-center justify-between gap-4 border-b border-[#D8D2C5]/70 bg-canvas/90 px-5 py-4 pl-16 backdrop-blur-md sm:px-8 sm:pl-20 lg:px-10 lg:pl-10">

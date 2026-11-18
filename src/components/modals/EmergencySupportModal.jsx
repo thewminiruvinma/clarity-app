@@ -3,9 +3,12 @@ import { useEffect, useState } from "react"
 import { useApp } from "../../context/AppContext"
 
 export default function EmergencySupportModal() {
-  const { isEmergencyOpen, setEmergencyOpen } = useApp()
+  const { isEmergencyOpen, setEmergencyOpen, crisisTextNumber } = useApp()
   const [breathing, setBreathing] = useState(false)
   const [phase, setPhase] = useState("Breathe in")
+
+  // Use custom crisisTextNumber from AppContext or fallback to 741741
+  const activeTextNumber = crisisTextNumber || "741741"
 
   useEffect(() => {
     if (!breathing) return undefined
@@ -65,7 +68,7 @@ export default function EmergencySupportModal() {
 
         <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-9">
           <a
-            href="tel:988"
+            href="tel:1926"
             className="group rounded-2xl border border-lavender-border bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
           >
             <span className="mb-5 grid size-9 place-items-center rounded-xl bg-[#E5ECFA] text-primary">
@@ -80,7 +83,7 @@ export default function EmergencySupportModal() {
             </p>
           </a>
           <a
-            href="sms:741741?body=HOME"
+            href={`sms:${activeTextNumber}?body=HOME`}
             className="group rounded-2xl border border-lavender-border bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
           >
             <span className="mb-5 grid size-9 place-items-center rounded-xl bg-[#DDF4F2] text-[#347F7C]">
@@ -90,7 +93,7 @@ export default function EmergencySupportModal() {
               Crisis Text Line
             </p>
             <p className="mt-1 text-2xl font-bold text-ink">
-              Text HOME to 741741
+              Text HOME to {activeTextNumber}
             </p>
             <p className="mt-2 text-xs leading-5 text-muted">
               Connect over text, at no cost.
