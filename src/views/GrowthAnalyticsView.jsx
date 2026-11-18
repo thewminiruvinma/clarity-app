@@ -132,11 +132,13 @@ export default function GrowthAnalyticsView() {
     ? Math.round(entries.reduce((acc, curr) => acc + (curr.clarityScore || 50), 0) / totalEntriesCount)
     : 0
 
-  // Count total distortions across all backend entries
+  // Count total distortions using correct database property 'd.name'
   let allDistortions = []
   entries.forEach(entry => {
     if (entry.distortions) {
-      entry.distortions.forEach(d => allDistortions.push(d.distortionType))
+      entry.distortions.forEach(d => {
+        if (d.name) allDistortions.push(d.name)
+      })
     }
   })
 
@@ -183,7 +185,7 @@ export default function GrowthAnalyticsView() {
   ]
 
   // Map entries into chart format (chronological order)
-  const chartHistory = [...entries].reverse().map((entry, idx) => ({
+  const chartHistory = [...entries].reverse().map((entry) => ({
     day: new Date(entry.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
     clarity: entry.clarityScore || 50,
     patterns: entry.distortions?.length || 1

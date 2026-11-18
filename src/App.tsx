@@ -1,3 +1,4 @@
+import React from "react"
 import Sidebar from "./components/layout/Sidebar"
 import Header from "./components/layout/Header"
 import EmergencySupportModal from "./components/modals/EmergencySupportModal"
@@ -7,7 +8,7 @@ import GrowthAnalyticsView from "./views/GrowthAnalyticsView"
 import HistoryMasterDetailView from "./views/HistoryMasterDetailView"
 import JournalWorkspaceView from "./views/JournalWorkspaceView"
 
-const views = {
+const views: Record<string, React.ComponentType> = {
   journal: JournalWorkspaceView,
   history: HistoryMasterDetailView,
   growth: GrowthAnalyticsView,
@@ -24,7 +25,7 @@ function ClarityApp() {
     <div className="min-h-screen bg-canvas text-ink">
       <Sidebar />
       <div className="min-h-screen lg:pl-64">
-        <Header />
+        <Header>{null}</Header>
         <main>
           <CurrentView />
         </main>

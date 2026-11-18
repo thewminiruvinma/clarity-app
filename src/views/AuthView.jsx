@@ -6,14 +6,54 @@ export default function AuthView() {
   const { authMode, setAuthMode, authenticate } = useApp()
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ name: "", email: "", password: "" })
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const isLogin = authMode === "login"
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    authenticate({
-      name: form.name.trim().split(" ")[0] || "Maya",
-      email: form.email || "maya@example.com",
-    })
+    setError("")
+    setIsLoading(true)
+
+    try {
+      const endpoint = isLogin
+        ? "http://localhost:5000/api/auth/login"
+        : "http://localhost:5000/api/auth/register"
+
+      const payload = isLogin
+        ? { email: form.email, password: form.password }
+        : { name: form.name.trim(), email: form.email, password: form.password }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Authentication failed")
+      }
+
+      if (!data.token) {
+        throw new Error("No token received from server")
+      }
+
+      // Save token securely in localStorage
+      localStorage.setItem("token", data.token)
+
+      // Pass real database user info to context
+      authenticate({
+        id: data.user?.id,
+        name: data.user?.name,
+        email: data.user?.email,
+      })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -95,7 +135,10 @@ export default function AuthView() {
               <button
                 type="button"
                 key={mode}
-                onClick={() => setAuthMode(mode)}
+                onClick={() => {
+                  setAuthMode(mode)
+                  setError("")
+                }}
                 className={`rounded-xl py-2.5 text-sm font-bold transition ${
                   authMode === mode
                     ? "bg-white text-ink shadow-sm"
@@ -106,6 +149,12 @@ export default function AuthView() {
               </button>
             ))}
           </div>
+
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             {!isLogin && (
@@ -167,9 +216,10 @@ export default function AuthView() {
             </label>
             <button
               type="submit"
-              className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#5975BD]/20 transition hover:bg-[#4E69AE]"
+              disabled={isLoading}
+              className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#5975BD]/20 transition hover:bg-[#4E69AE] disabled:opacity-60"
             >
-              {isLogin ? "Enter your workspace" : "Create my account"}
+              {isLoading ? "Please wait..." : isLogin ? "Enter your workspace" : "Create my account"}
               <ArrowRight
                 size={17}
                 className="transition-transform group-hover:translate-x-1"
@@ -177,29 +227,6 @@ export default function AuthView() {
             </button>
           </form>
 
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-[#DDD8CE]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
-              Or continue with
-            </span>
-            <span className="h-px flex-1 bg-[#DDD8CE]" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => authenticate({ name: "Maya" })}
-              className="rounded-2xl border border-[#D7D1C6] bg-white/60 py-3 text-sm font-bold text-ink transition hover:bg-white"
-            >
-              Google
-            </button>
-            <button
-              type="button"
-              onClick={() => authenticate({ name: "Maya" })}
-              className="rounded-2xl border border-[#D7D1C6] bg-white/60 py-3 text-sm font-bold text-ink transition hover:bg-white"
-            >
-              Apple
-            </button>
-          </div>
           <p className="mt-7 text-center text-[11px] leading-5 text-muted">
             By continuing, you agree to our Terms and acknowledge that Clarity
             is a reflection tool, not a substitute for professional care.

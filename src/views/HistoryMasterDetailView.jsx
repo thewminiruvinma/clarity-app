@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { CalendarDays, Search, Sparkles, Filter } from "lucide-react"
+import { CalendarDays, Search, Sparkles } from "lucide-react"
 import { useApp } from "../context/AppContext"
 
 export default function HistoryMasterDetailView() {
@@ -119,7 +119,7 @@ export default function HistoryMasterDetailView() {
                             key={i}
                             className="rounded-md bg-[#E8EAF4]/60 px-2 py-0.5 text-[10px] font-bold text-primary"
                           >
-                            {d.distortionType}
+                            {d.name}
                           </span>
                         ))}
                       </div>
@@ -161,7 +161,7 @@ export default function HistoryMasterDetailView() {
                         key={i}
                         className="rounded-xl bg-[#F2E8D0] px-3 py-1 text-xs font-bold text-[#9A743E]"
                       >
-                        {d.distortionType}
+                        {d.name}
                       </span>
                     ))}
                   </div>
@@ -184,19 +184,19 @@ export default function HistoryMasterDetailView() {
                   Socratic Dialogue & Reframing
                 </span>
                 <div className="mt-2 space-y-3">
-                  {selectedEntry.reflections?.length === 0 ? (
+                  {(!selectedEntry.socraticReflections || selectedEntry.socraticReflections.length === 0) ? (
                     <div className="rounded-2xl border border-lavender-border bg-[#F9F7F2] p-4 text-xs text-muted">
                       No Socratic prompt generated for this entry.
                     </div>
                   ) : (
-                    selectedEntry.reflections.map((ref, idx) => (
+                    selectedEntry.socraticReflections.map((ref, idx) => (
                       <div key={idx} className="rounded-2xl border border-[#DDF1EF] bg-[#F4FBFA] p-5">
                         <div className="flex items-center gap-2 text-xs font-bold text-[#347F7C] mb-2">
                           <Sparkles size={14} />
                           AI Socratic Prompt
                         </div>
                         <p className="text-sm font-medium text-ink leading-relaxed">
-                          {ref.socraticPrompt}
+                          {ref.question}
                         </p>
                         {ref.userResponse && (
                           <div className="mt-4 border-t border-[#DDF1EF] pt-3">

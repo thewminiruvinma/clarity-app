@@ -1,21 +1,22 @@
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'clarity_secret_key';
+
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  // Provide a default dev user if token is missing or dummy
-  if (!token || token === 'dev_dummy_token') {
-    req.user = { id: 'dev-user-id', email: 'maya@example.com' };
-    return next();
+  // Strictly require a valid token
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required for authentication' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'clarity_secret_key', (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      // Dev fallback if JWT fails
-      req.user = { id: 'dev-user-id', email: 'maya@example.com' };
-      return next();
+      return res.status(403).json({ error: 'Invalid or expired token' });
     }
+    
+    // Attach the verified user payload (contains id, email, name) to req.user
     req.user = user;
     next();
   });

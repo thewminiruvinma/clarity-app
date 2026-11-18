@@ -11,7 +11,9 @@ function viewFromPath() {
 
 export function AppProvider({ children }) {
   const [currentView, setCurrentView] = useState(viewFromPath)
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  
+  // Check if token exists in localStorage to determine real authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem("token"))
   const [authMode, setAuthMode] = useState("login")
   
   // Database states
@@ -21,21 +23,24 @@ export function AppProvider({ children }) {
   
   const [isEmergencyOpen, setEmergencyOpen] = useState(false)
   const [isSidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState({ name: "Maya", email: "maya@example.com" })
+  
+  // Real user state initialized safely (cleared default mock data)
+  const [user, setUser] = useState({ id: null, name: "", email: "" })
 
-  // Retrieve token from storage (or pass token as needed)
   const token = localStorage.getItem("token")
 
-  // Load entries from Express / MySQL backend on mount
+  // Load entries from Express / MySQL backend on mount or authentication
   useEffect(() => {
     const loadBackendEntries = async () => {
-      if (!isAuthenticated) return
+      if (!isAuthenticated || !token) return
       setIsLoadingEntries(true)
       try {
         const data = await fetchJournalEntries(token)
         if (data && data.length > 0) {
           setEntries(data)
           setSelectedEntryId(data[0].id)
+        } else {
+          setEntries([])
         }
       } catch (error) {
         console.error("Failed to fetch journal entries from API:", error)
@@ -59,22 +64,37 @@ export function AppProvider({ children }) {
     window.history.pushState({}, "", `/${view}`)
   }
 
-  const authenticate = (profile) => {
-    setUser((current) => ({ ...current, ...profile }))
-    setIsAuthenticated(true)
-    navigate("journal")
+  const authenticate = (profile, token) => {
+    if (token) {
+      localStorage.setItem("token", token);
+    }
+    if (profile?.name) {
+      localStorage.setItem("userName", profile.name);
+    }
+
+    setUser((current) => ({ ...current, ...profile }));
+    setIsAuthenticated(true);
+    navigate("journal");
   }
 
   const signOut = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem("token")
-    window.history.pushState({}, "", "/")
+    setIsAuthenticated(false);
+    setUser({ id: null, name: "", email: "" });
+    setEntries([]);
+    setSelectedEntryId(null);
+    
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+    
+    window.history.pushState({}, "", "/");
   }
 
-  // Create new journal entry via API
+ // Create new journal entry via API
   const addEntry = async (rawText) => {
     try {
-      const newEntry = await createJournalEntry(rawText, token)
+      const response = await createJournalEntry(rawText, token)
+      const newEntry = response.entry || response
+
       setEntries((current) => [newEntry, ...current])
       setSelectedEntryId(newEntry.id)
     } catch (error) {
@@ -85,7 +105,7 @@ export function AppProvider({ children }) {
   // Submit follow-up dialogue / reflection response via API
   const addFollowUp = async (entryId, message) => {
     const targetEntry = entries.find((e) => e.id === entryId)
-    const reflectionId = targetEntry?.reflections?.[0]?.id
+    const reflectionId = targetEntry?.socraticReflections?.[0]?.id || targetEntry?.reflections?.[0]?.id
 
     try {
       if (reflectionId) {
