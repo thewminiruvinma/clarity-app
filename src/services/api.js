@@ -48,7 +48,10 @@ export const fetchJournalEntries = async (token) => {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || 'Failed to fetch entries');
   }
-  return response.json();
+  const data = await response.json();
+  
+  // Return entries array directly so AppContext gets the array instead of an object wrapper
+  return data.entries || data;
 };
 
 export const createJournalEntry = async (rawText, token) => {
