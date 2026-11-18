@@ -1,11 +1,12 @@
 import React, { useState } from "react"
-import { Sparkles, CalendarDays, ArrowRight, BrainCircuit } from "lucide-react"
+import { Sparkles, CalendarDays, ArrowRight, BrainCircuit, Mic, MicOff, Volume2 } from "lucide-react"
 import { useApp } from "../context/AppContext"
 
 export default function JournalView() {
   const { entries, addEntry, isLoadingEntries, user } = useApp()
   const [newEntryText, setNewEntryText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isListening, setIsListening] = useState(false)
 
   // Retrieve user name from AppContext or fallback to localStorage
   const userName = user?.name || localStorage.getItem('userName') || 'Maya'
@@ -16,6 +17,61 @@ export default function JournalView() {
   const avgClarity = totalEntries > 0
     ? Math.round(entries.reduce((acc, curr) => acc + (curr.clarityScore || 50), 0) / totalEntries)
     : 72
+
+  // 1. Improved Voice-to-Text Speech Recognition for Journal Input
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        console.log("Microphone is active. Speak now...");
+      };
+
+      recognition.onresult = (event) => {
+        const speechToText = event.results[0][0].transcript;
+        console.log("Recognized text:", speechToText);
+        setNewEntryText((prev) => (prev ? prev + " " + speechToText : speechToText));
+        setIsListening(false);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error:", event.error);
+        alert("Microphone error: " + event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error("Failed to start speech recognition:", err);
+      setIsListening(false);
+    }
+  };
+
+  // 2. Text-to-Speech to read out Socratic prompts aloud
+  const speakText = (text) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Text-to-speech is not supported in this browser.");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -71,7 +127,7 @@ export default function JournalView() {
           <p className="text-sm text-muted mt-1">What&apos;s taking up the most space in your mind today?</p>
         </div>
 
-        {/* Top Right Badges matching Figma */}
+        {/* Top Right Badges */}
         <div className="flex items-center gap-4">
           <div className="rounded-[1.5rem] border border-lavender-border bg-white/70 px-5 py-3 shadow-sm flex items-center gap-4">
             <div className="relative grid size-11 place-items-center rounded-full bg-[#E8EAF4] text-primary font-bold text-sm">
@@ -90,27 +146,39 @@ export default function JournalView() {
         </div>
       </div>
 
-      {/* Main Split Grid: Left = Writing Form & Entries, Right = Socratic Companion */}
+      {/* Main Split Grid */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(350px,1fr)]">
         
-        {/* LEFT COLUMN: Open Journal Input & Recent Submission Feed */}
+        {/* LEFT COLUMN: Open Journal Input & Recent Feed */}
         <div className="space-y-6">
           <div className="rounded-[1.75rem] border border-lavender-border bg-white/75 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-ink flex items-center gap-2">
                 <span className="size-2 rounded-full bg-primary" /> Open Journal
               </span>
-              <span className="text-[11px] text-muted">
-                {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              
+              {/* Voice Typing Trigger Button */}
+              <button
+                type="button"
+                onClick={handleVoiceInput}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                  isListening 
+                    ? "bg-red-500 text-white animate-pulse" 
+                    : "bg-[#E8EAF4] text-primary hover:bg-[#d8def4]"
+                }`}
+                title="Click to speak your thoughts"
+              >
+                {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                {isListening ? "Listening..." : "Voice Type"}
+              </button>
             </div>
-            <p className="text-xs text-muted mb-4">Write freely. This space is yours.</p>
+            <p className="text-xs text-muted mb-4">Write freely or use voice typing. This space is yours.</p>
 
             <form onSubmit={handleSubmit}>
               <textarea
                 value={newEntryText}
                 onChange={(e) => setNewEntryText(e.target.value)}
-                placeholder="Release your stream of consciousness thoughts here..."
+                placeholder="Release your stream of consciousness thoughts here or click 'Voice Type'..."
                 className="w-full rounded-2xl border border-lavender-border bg-[#F9F7F2] p-4 text-sm text-ink outline-none focus:border-primary min-h-[140px] resize-y"
                 rows={4}
               />
@@ -132,7 +200,7 @@ export default function JournalView() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted px-1">Recent Reflections</h3>
             {entries.length === 0 ? (
               <div className="rounded-2xl border border-lavender-border bg-white/55 p-6 text-center text-xs text-muted">
-                No entries saved yet. Write your first thought above!
+                No entries saved yet. Write or speak your first thought above!
               </div>
             ) : (
               entries.slice(0, 3).map((entry) => {
@@ -149,7 +217,19 @@ export default function JournalView() {
                     
                     {reflection && (
                       <div className="mt-3 rounded-xl bg-[#F4FBFA] border border-[#DDF1EF] p-4 text-xs text-[#347F7C]">
-                        <strong>Socratic Prompt:</strong> {reflection.socraticPrompt}
+                        <div className="flex items-center justify-between mb-1">
+                          <strong>Socratic Prompt:</strong>
+                          {/* Text-to-Speech Speaker Button */}
+                          <button
+                            type="button"
+                            onClick={() => speakText(reflection.socraticPrompt)}
+                            className="flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-[#347F7C] shadow-sm hover:bg-[#347F7C] hover:text-white transition"
+                            title="Listen aloud"
+                          >
+                            <Volume2 size={13} /> Read Aloud
+                          </button>
+                        </div>
+                        <p className="mt-1">{reflection.socraticPrompt}</p>
                         
                         {reflection.userResponse ? (
                           <div className="mt-3 border-t border-[#DDF1EF] pt-2 text-ink">
@@ -209,10 +289,10 @@ export default function JournalView() {
                 <h3 className="text-lg font-bold text-ink flex items-center gap-2">
                   <BrainCircuit size={18} className="text-primary" /> Socratic companion
                 </h3>
-                <p className="text-xs text-muted mt-1">A thoughtful mirror, not a verdict</p>
+                <p className="text-xs text-muted mt-1">A thoughtful mirror, not a verdict (Voice enabled)</p>
               </div>
               <span className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-bold text-[#347F7C] border border-[#347F7C]/20">
-                ● Present
+                ● Live Audio Ready
               </span>
             </div>
 
@@ -222,14 +302,24 @@ export default function JournalView() {
               </span>
               <h4 className="font-serif text-xl font-semibold text-ink">Ready when you are.</h4>
               <p className="text-xs text-muted mt-2 leading-relaxed max-w-xs mx-auto">
-                Write what&apos;s on your mind, then invite a gentler perspective with Analyze & Reflect.
+                Speak or write what&apos;s on your mind, then listen to or read your personalized Socratic insights.
               </p>
             </div>
           </div>
 
           {latestEntry && latestEntry.reflections?.[0] && (
             <div className="rounded-2xl border border-lavender-border bg-white/60 p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1">Latest Insight</span>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted">Latest Insight</span>
+                <button
+                  type="button"
+                  onClick={() => speakText(latestEntry.reflections[0].socraticPrompt)}
+                  className="text-primary hover:text-primary/80 transition"
+                  title="Listen aloud"
+                >
+                  <Volume2 size={15} />
+                </button>
+              </div>
               <p className="text-xs font-medium text-ink italic">&ldquo;{latestEntry.reflections[0].socraticPrompt}&rdquo;</p>
             </div>
           )}
