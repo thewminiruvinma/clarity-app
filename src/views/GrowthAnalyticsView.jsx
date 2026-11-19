@@ -19,9 +19,10 @@ const toneClasses = {
 function TrendChart({ historyData }) {
   const width = 700
   const height = 260
-  const x = (index) => 45 + index * (historyData.length > 1 ? 600 / (historyData.length - 1) : 100)
-  const y = (value) => 225 - (value / 100) * 190
-  
+  const x = (index) =>
+    45 + index * (historyData.length > 1 ? 600 / (historyData.length - 1) : 280)
+  const y = (value) => 225 - (Math.min(value, 100) / 100) * 190
+
   const pathFor = (key) =>
     historyData
       .map((item, index) => `${index ? "L" : "M"} ${x(index)} ${y(item[key])}`)
@@ -29,7 +30,7 @@ function TrendChart({ historyData }) {
 
   if (!historyData || historyData.length === 0) {
     return (
-      <div className="mt-5 h-[260px] flex items-center justify-center text-xs text-muted">
+      <div className="mt-5 flex h-[260px] items-center justify-center text-xs text-muted">
         Not enough entries to plot trend graph yet. Add more journal entries!
       </div>
     )
@@ -39,7 +40,7 @@ function TrendChart({ historyData }) {
     <div className="mt-5 overflow-x-auto">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="min-w-[620px] w-full"
+        className="w-full min-w-[620px]"
         role="img"
         aria-label="Clarity score and pattern frequency trend chart"
       >
@@ -54,7 +55,7 @@ function TrendChart({ historyData }) {
             <line
               x1="45"
               y1={y(value)}
-              x2="635"
+              x2="645"
               y2={y(value)}
               stroke="#D8D3DE"
               strokeDasharray="4 6"
@@ -79,7 +80,7 @@ function TrendChart({ historyData }) {
           strokeLinejoin="round"
         />
         <path
-          d={pathFor("patterns")}
+          d={pathFor("patternsScaled")}
           fill="none"
           stroke="#4DA6A0"
           strokeWidth="3"
@@ -88,7 +89,7 @@ function TrendChart({ historyData }) {
           strokeLinejoin="round"
         />
         {historyData.map((item, index) => (
-          <g key={item.day || index}>
+          <g key={item.id || index}>
             <circle
               cx={x(index)}
               cy={y(item.clarity)}
@@ -99,7 +100,7 @@ function TrendChart({ historyData }) {
             />
             <circle
               cx={x(index)}
-              cy={y(item.patterns * 10)} 
+              cy={y(item.patternsScaled)}
               r="4"
               fill="#4DA6A0"
               stroke="#F9F7F2"
@@ -113,7 +114,7 @@ function TrendChart({ historyData }) {
               fontWeight="600"
               textAnchor="middle"
             >
-              {item.day}
+              {item.label}
             </text>
           </g>
         ))}
@@ -127,17 +128,22 @@ export default function GrowthAnalyticsView() {
 
   // 1. Calculate dynamic KPIs based on database entries
   const totalEntriesCount = entries.length
-  
-  const avgClarity = totalEntriesCount > 0
-    ? Math.round(entries.reduce((acc, curr) => acc + (curr.clarityScore || 50), 0) / totalEntriesCount)
-    : 0
 
-  // Count total distortions using correct database property 'd.name'
-  let allDistortions = []
-  entries.forEach(entry => {
-    if (entry.distortions) {
-      entry.distortions.forEach(d => {
-        if (d.name) allDistortions.push(d.name)
+  const avgClarity =
+    totalEntriesCount > 0
+      ? Math.round(
+          entries.reduce((acc, curr) => acc + (curr.clarityScore || 50), 0) /
+            totalEntriesCount,
+        )
+      : 0
+
+  // Count total distortions using 'distortionType' (from Prisma) or fallback to 'name'
+  const allDistortions = []
+  entries.forEach((entry) => {
+    if (Array.isArray(entry.distortions)) {
+      entry.distortions.forEach((d) => {
+        const patternName = d.distortionType || d.name
+        if (patternName) allDistortions.push(patternName)
       })
     }
   })
@@ -152,7 +158,7 @@ export default function GrowthAnalyticsView() {
     .map(([name, count]) => ({
       name,
       count,
-      percent: Math.round((count / (allDistortions.length || 1)) * 100)
+      percent: Math.round((count / (allDistortions.length || 1)) * 100),
     }))
 
   const uniquePatternTypes = Object.keys(distortionCounts).length
@@ -161,35 +167,43 @@ export default function GrowthAnalyticsView() {
     {
       label: "Total Reflections",
       value: totalEntriesCount,
-      change: totalEntriesCount > 0 ? "Active journaling streak" : "No entries yet",
-      tone: "blue"
+      change:
+        totalEntriesCount > 0 ? "Active journaling streak" : "No entries yet",
+      tone: "blue",
     },
     {
       label: "Average Clarity Score",
       value: `${avgClarity}/100`,
       change: avgClarity >= 60 ? "Grounded perspective" : "Room for reframing",
-      tone: "teal"
+      tone: "teal",
     },
     {
       label: "Patterns Identified",
       value: `${uniquePatternTypes} types`,
       change: `Across ${allDistortions.length} total occurrences`,
-      tone: "lavender"
+      tone: "lavender",
     },
     {
       label: "Reframing Success Rate",
       value: totalEntriesCount > 0 ? "100%" : "0%",
       change: "Socratic guidance active",
-      tone: "cream"
-    }
+      tone: "cream",
+    },
   ]
 
   // Map entries into chart format (chronological order)
-  const chartHistory = [...entries].reverse().map((entry) => ({
-    day: new Date(entry.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
-    clarity: entry.clarityScore || 50,
-    patterns: entry.distortions?.length || 1
-  }))
+  const chartHistory = [...entries].reverse().map((entry, idx) => {
+    const dateObj = entry.createdAt ? new Date(entry.createdAt) : new Date()
+    const dayStr = dateObj.toLocaleDateString("en-US", { weekday: "short" })
+    const count = entry.distortions?.length || 0
+
+    return {
+      id: entry.id || idx,
+      label: `${dayStr} #${idx + 1}`,
+      clarity: entry.clarityScore || 50,
+      patternsScaled: count * 20, // Scaled nicely to 0-100 chart axis (e.g., 1 pattern = 20, 2 patterns = 40)
+    }
+  })
 
   const topDistortionName = sortedDistortions[0]?.name || "Balanced Thoughts"
   const topDistortionCount = sortedDistortions[0]?.count || 0
@@ -269,10 +283,12 @@ export default function GrowthAnalyticsView() {
             </div>
             <div className="flex flex-wrap gap-4 text-[10px] font-bold text-muted">
               <span className="flex items-center gap-2">
-                <span className="h-0.5 w-5 rounded-full bg-primary" /> Clarity score
+                <span className="h-0.5 w-5 rounded-full bg-primary" /> Clarity
+                score
               </span>
               <span className="flex items-center gap-2">
-                <span className="w-5 border-t-2 border-dashed border-[#4DA6A0]" /> Distortion count
+                <span className="w-5 border-t-2 border-dashed border-[#4DA6A0]" />{" "}
+                Distortion count
               </span>
             </div>
           </div>
@@ -293,7 +309,9 @@ export default function GrowthAnalyticsView() {
           </div>
           <div className="space-y-5">
             {sortedDistortions.length === 0 ? (
-              <p className="text-xs text-muted">No cognitive patterns recorded yet.</p>
+              <p className="text-xs text-muted">
+                No cognitive patterns recorded yet.
+              </p>
             ) : (
               sortedDistortions.map((item, index) => (
                 <div key={item.name}>
@@ -331,7 +349,7 @@ export default function GrowthAnalyticsView() {
                   A pattern worth celebrating
                 </p>
                 <p className="mt-1 text-[11px] leading-5 text-muted">
-                  {topDistortionCount > 0 
+                  {topDistortionCount > 0
                     ? `You encountered "${topDistortionName}" ${topDistortionCount} time(s) this week. Recognition is becoming a strength.`
                     : `Keep journaling to track and observe your cognitive patterns over time.`}
                 </p>

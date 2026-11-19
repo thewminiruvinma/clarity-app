@@ -34,6 +34,22 @@ export const registerUser = async (name, email, password) => {
   return response.json();
 };
 
+// Update user profile API call
+export async function updateUserProfile(profileData, token) {
+  const response = await fetch('http://localhost:5000/api/users/profile', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+  
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to update profile');
+  return data;
+}
+
 // --- Journal & Reflection APIs ---
 
 export const fetchJournalEntries = async (token) => {

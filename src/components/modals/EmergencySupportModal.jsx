@@ -7,8 +7,8 @@ export default function EmergencySupportModal() {
   const [breathing, setBreathing] = useState(false)
   const [phase, setPhase] = useState("Breathe in")
 
-  // Use custom crisisTextNumber from AppContext or fallback to 741741
-  const activeTextNumber = crisisTextNumber || "741741"
+  // Use custom crisisTextNumber from AppContext or fallback to 07XXXXXXXX
+  const activeTextNumber = crisisTextNumber || "07XXXXXXXX"
 
   useEffect(() => {
     if (!breathing) return undefined

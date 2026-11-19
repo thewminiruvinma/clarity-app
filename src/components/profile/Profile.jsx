@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useApp } from "../../context/AppContext"
-import { User, Mail, Lock, Phone, CheckCircle2 } from "lucide-react"
+import { updateUserProfile } from "../../services/api"
+import { User, Mail, Lock, Phone, CheckCircle2, AlertCircle } from "lucide-react"
 
 export default function Profile() {
   const { user, updateProfile, crisisTextNumber, updateCrisisNumber } = useApp()
@@ -12,18 +13,46 @@ export default function Profile() {
   const [textNumber, setTextNumber] = useState(crisisTextNumber || "741741")
   
   const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault()
-    if (updateProfile) {
-      updateProfile({ name, email })
-    }
-    if (updateCrisisNumber) {
+    setSuccessMessage("")
+    setErrorMessage("")
+    setIsSubmitting(true)
+
+    const token = localStorage.getItem("token")
+
+    try {
+      // Send data to backend database
+      const response = await updateUserProfile({
+        name,
+        email,
+        currentPassword: currentPassword || undefined,
+        newPassword: newPassword || undefined,
+        crisisTextNumber: textNumber
+      }, token)
+
+      // Update global AppContext state & local storage
+      if (response.user) {
+        updateProfile({ name: response.user.name, email: response.user.email })
+      }
       updateCrisisNumber(textNumber)
+
+      setSuccessMessage("Profile and settings successfully saved to database!")
+      setCurrentPassword("")
+      setNewPassword("")
+    } catch (error) {
+      console.error("Failed to save profile:", error)
+      setErrorMessage(error.message || "Failed to update profile. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+      setTimeout(() => {
+        setSuccessMessage("")
+        setErrorMessage("")
+      }, 5000)
     }
-    
-    setSuccessMessage("Profile and settings updated successfully!")
-    setTimeout(() => setSuccessMessage(""), 4000)
   }
 
   return (
@@ -33,7 +62,7 @@ export default function Profile() {
           Profile & Preferences
         </h1>
         <p className="text-sm text-muted">
-          Manage your account details, security credentials, and emergency support settings.
+          Manage your account details, security credentials, and emergency support settings. Saved directly to database.
         </p>
       </div>
 
@@ -41,6 +70,13 @@ export default function Profile() {
         <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
           <CheckCircle2 size={20} className="text-emerald-600" />
           <span>{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
+          <AlertCircle size={20} className="text-red-600" />
+          <span>{errorMessage}</span>
         </div>
       )}
 
@@ -97,7 +133,7 @@ export default function Profile() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                Current Password
+                Current Password (required if changing password)
               </label>
               <input
                 type="password"
@@ -110,7 +146,7 @@ export default function Profile() {
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-1.5">
-                New Password
+                New Password (optional)
               </label>
               <input
                 type="password"
@@ -131,7 +167,7 @@ export default function Profile() {
             <Phone size={18} className="text-[#9B4D55]" /> Emergency Support Configuration
           </h2>
           <p className="text-xs text-muted">
-            Configure the custom crisis text number. This will instantly preview and update inside your Emergency Support modal.
+            Configure the custom crisis text number. This will be stored in your profile and previewed inside your Emergency Support modal.
           </p>
 
           <div>
@@ -151,9 +187,10 @@ export default function Profile() {
         <div className="pt-4 flex justify-end">
           <button
             type="submit"
-            className="rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
+            disabled={isSubmitting}
+            className="rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:opacity-50"
           >
-            Save Changes
+            {isSubmitting ? "Saving to Database..." : "Save Changes"}
           </button>
         </div>
 

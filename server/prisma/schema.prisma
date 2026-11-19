@@ -8,18 +8,19 @@ generator client {
 }
 
 model User {
-  id        String         @id @default(uuid())
-  email     String         @unique
-  password  String
-  name      String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  entries   JournalEntry[]
+  id               Int      @id @default(autoincrement())
+  email            String   @unique
+  name             String
+  password         String
+  crisisTextNumber String   @default("741741")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  journalEntries   JournalEntry[]
 }
 
 model JournalEntry {
   id           String               @id @default(uuid())
-  userId       String
+  userId       Int
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   rawText      String               @db.Text
   clarityScore Int                  @default(50)
